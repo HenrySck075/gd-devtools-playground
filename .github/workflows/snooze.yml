@@ -1,0 +1,33 @@
+name: Build Flutter app
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: true
+      # will add android after i figured out how to prevent the crash
+      matrix:
+        config:
+        - name: Windows
+          os: windows-latest
+          target: windows
+          
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build ${{ matrix.config.target }}
