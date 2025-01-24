@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-ColorScheme mainScheme = ColorScheme.fromSeed(seedColor: Color(0x00a85513));
+ColorScheme domainScheme = ColorScheme.fromSeed(seedColor: Color(0xffa85513));
 
-ColorScheme methodScheme = ColorScheme.fromSeed(seedColor: Color(0x00a2e737));
-ColorScheme eventScheme = ColorScheme.fromSeed(seedColor: Colors.pink);
-ColorScheme typeScheme = ColorScheme.fromSeed(seedColor: Color(0x0067f0f8));
+ColorScheme methodScheme = ColorScheme.fromSeed(seedColor: Color(0xff7ADE2D));
+ColorScheme eventScheme = ColorScheme.fromSeed(seedColor: Color(0xffFF8AFF));
+ColorScheme typeScheme = ColorScheme.fromSeed(seedColor: Color(0xff24E5E4));
+
+ColorScheme mainScheme = ColorScheme.fromSeed(seedColor: Color(0xff287DFF));

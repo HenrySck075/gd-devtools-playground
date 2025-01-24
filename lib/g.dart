@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'protocol_definition.dart';
 
 class Neuro extends InheritedWidget {
-  final UnmodifiableListView<Domain> domains;
+  final UnmodifiableMapView<String, Domain> domains;
   const Neuro({super.key, required super.child, required this.domains});
 
   @override

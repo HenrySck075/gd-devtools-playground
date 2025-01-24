@@ -3,32 +3,21 @@ import 'package:gdp_playground/confe.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:go_router/go_router.dart';
 
-class DomainPage extends StatelessWidget {
-  final Domain info;
+class MethodPage extends StatefulWidget {
+  final Method info;
 
-  const DomainPage({super.key, required this.info}); 
+
+  const MethodPage({super.key, required this.info}); 
+
+  @override
+  State<MethodPage> createState() => _MethodPageState();
+}
+
+class _MethodPageState extends State<MethodPage> {
+  bool paramsPanelExpanded = false;
 
   @override
   Widget build(BuildContext context) {
-    List<ReasonableExpansionPanel> j = [
-      if (info.methods.isNotEmpty) ReasonableExpansionPanel(
-        headerBuilder: (c, opened) => const Text("Methods"), 
-        body: Theme(
-          data: Theme.of(context).copyWith(colorScheme: methodScheme),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: info.methods.values.map((e)=>ListTile(
-              title: Text(e.name),
-              subtitle: Text(e.description.truncate(77)),
-              onTap: (){
-                GoRouter.of(context).go("/${info.name}/method/${e.name}");
-              },
-            )).toList(),
-          ),
-        ),
-        isExpanded: false
-      )
-    ];
     return Column(
       spacing: 4,
       children: [
@@ -43,24 +32,36 @@ class DomainPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8)
               ),
               child: Text(
-                info.name, 
+                widget.info.name, 
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontFamily: "consola"),
               ),
             ),
-            Text("domain", style: Theme.of(context).textTheme.headlineMedium,)
+            Text("method", style: Theme.of(context).textTheme.headlineMedium,)
           ],
         ),
         // description
-        if (info.description.isNotEmpty) Card(
-          child: Text(info.description, softWrap: true,),
+        if (widget.info.description.isNotEmpty) Card(
+          child: Text(widget.info.description, softWrap: true,),
         ),
         // its content (methods, events, types)
         StatefulBuilder(
           builder: (context, setState) => ExpansionPanelList(
-            children: j,
+            children: [
+              ExpansionPanel(
+                headerBuilder: (_,__)=>Text("Parameters"), 
+                body: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: widget.info.parameters.values.map((e)=>ListTile(
+                    title: Text(e.name),
+                    subtitle: Text(e.description.truncate(77)),
+                  )).toList(),
+                ),
+                isExpanded: paramsPanelExpanded
+              )
+            ],
             expansionCallback: (dex, opened) {
               setState((){
-                j[dex].isExpanded = opened;
+                paramsPanelExpanded = opened;
               });
             },
           )

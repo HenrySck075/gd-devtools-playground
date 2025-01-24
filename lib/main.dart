@@ -5,6 +5,7 @@ import 'package:gdp_playground/confe.dart';
 import 'package:gdp_playground/domain.dart';
 import 'package:gdp_playground/g.dart';
 import 'package:gdp_playground/home.dart';
+import 'package:gdp_playground/method.dart';
 import 'package:json_rpc_2/json_rpc_2.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:go_router/go_router.dart';
@@ -46,6 +47,14 @@ class SoggyObserver extends NavigatorObserver {
 
 final _router = GoRouter(
 observers: [SoggyObserver()],
+errorPageBuilder: (ctx, s)=>fadeTransition(Center(
+  child: Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text("Not found", style: TextTheme.of(ctx).headlineMedium,)
+    ],
+  ),
+)),
 routes: [
   ShellRoute(
     builder: (ctx, state, child) => ShellPage(child: child),
@@ -59,12 +68,15 @@ routes: [
             name: "domain",
             path: ":domain",
             pageBuilder: (ctx, s) => fadeTransition(
-              DomainPage(info: Neuro.of(ctx).domains.firstWhere((d)=>d.name == s.pathParameters["domain"]))
+              DomainPage(info: Neuro.of(ctx).domains[s.pathParameters["domain"]]!)
             ),
             routes: [
               GoRoute(
                 path: "method/:method",
                 name: "method",
+                pageBuilder: (ctx, s) => fadeTransition(
+                  MethodPage(info: Neuro.of(ctx).domains[s.pathParameters["domain"]!]!.methods[s.pathParameters["method"]]!)
+                )
               )
             ]
           )
@@ -93,13 +105,19 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: unsogged,
     builder: (ctx,c) {
-      String currentPath = _router.state?.name ?? "main";
+      String currentPath;
+      try {currentPath = _router.state?.name ?? "main";}
+      on StateError {
+        currentPath = "main";
+      }
       return MaterialApp.router(
         routerConfig: _router,
         title: 'g',
         theme: ThemeData(
           colorScheme: currentPath == "method"
           ? methodScheme
+          : currentPath == "domain" 
+          ? domainScheme
           : mainScheme,
           useMaterial3: true,
         ),
@@ -117,40 +135,77 @@ class ShellPage extends StatefulWidget {
 }
 
 class _ShellPageState extends State<ShellPage> {
-  // shell is the main owner copy of it
-  List<Domain> domains = [];
+  // shell is the main owner of it
+  Map<String, Domain> domains = {};
+  bool disconnected = false;
+  void connect([bool spamSetState = true]) {
+    disconnected = false;
+    client.listen().whenComplete((){
+      disconnected = true;
+      if (spamSetState) setState((){});
+    });
+    if (spamSetState) setState((){});
+  }
   @override
-    void initState() {
-      super.initState();
-      client.listen();
-      client.sendRequest("getProtocolInformation").then((v){
-        domains = (v! as Map<String, dynamic>)["domains"];
-        setState((){});
-      });
-    }
+  void initState() {
+    super.initState();
+    connect(false);
+    client.sendRequest("getProtocolInformation").then((v){
+      domains = {
+        for (final e in (v! as Map<String, dynamic>)["domains"] as List<Map<String, dynamic>>)
+        e["domain"]: Domain(e)
+      };
+      setState((){});
+    });
+  }
 
   bool useModalNavigation = false;
 
+  int drawerSelectedIndex = 0;
   @override
   Widget build(BuildContext context) {
     var drawer = NavigationDrawer(
+      selectedIndex: drawerSelectedIndex,
+      onDestinationSelected: (idx) {
+        drawerSelectedIndex = idx;
+        _router.push("/${domains.values.toList()[idx].name}");
+      },
       children: [
         Text("Domains",style: Theme.of(context).textTheme.titleSmall),
-        ...domains.map((d)=>NavigationDrawerDestination(icon: SizedBox.shrink(), label: Text(d.name),))
+        ...domains.values.map(
+          (d)=>NavigationDrawerDestination(
+            icon: SizedBox.shrink(), 
+            label: Text(d.name),
+          )
+        )
       ],
-      onDestinationSelected: (idx) {
-        _router.push("/${domains[idx].name}");
-      },
     );
     var box = DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(50),
         color: Theme.of(context).colorScheme.surface
       ),
-      child: widget.child,
+      child: disconnected
+      ? Center(
+        child: Column(
+          children: [
+            Text("Launch Geometry Dash and reconnect to start using the playground!"),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: 100),
+              child: FilledButton(
+                onPressed: connect,
+                child: Text("Reconnect"),
+              ),
+            )
+          ]
+        )
+      )
+      : domains.isEmpty 
+        ? Center(child: CircularProgressIndicator(),) 
+        : widget.child,
     );
     return Neuro(
-      domains: UnmodifiableListView(domains),
+      domains: UnmodifiableMapView(domains),
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,

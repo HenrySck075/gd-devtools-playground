@@ -49,14 +49,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.6"
-  cupertino_icons:
-    dependency: "direct main"
-    description:
-      name: cupertino_icons
-      sha256: ba631d1c7f7bef6b729a622b7b752645a2d076dba9976925b8f25725a30e1ee6
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.8"
   fake_async:
     dependency: transitive
     description:
@@ -89,7 +81,7 @@ packages:
     source: sdk
     version: "0.0.0"
   go_router:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: go_router
       sha256: "7c2d40b59890a929824f30d442e810116caf5088482629c894b9e4478c67472d"
@@ -97,7 +89,7 @@ packages:
     source: hosted
     version: "14.6.3"
   json_rpc_2:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: json_rpc_2
       sha256: "246b321532f0e8e2ba474b4d757eaa558ae4fdd0688fdbc1e1ca9705f9b8ca0e"
@@ -270,7 +262,7 @@ packages:
     source: hosted
     version: "0.1.6"
   web_socket_channel:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: web_socket_channel
       sha256: "0b8e2457400d8a859b7b2030786835a28a8e80836ef64402abef392ff4f1d0e5"
