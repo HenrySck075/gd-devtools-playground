@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gdp_playground/confe.dart';
+import 'package:gdp_playground/extensions.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,7 +13,13 @@ class DomainPage extends StatelessWidget {
   Widget build(BuildContext context) {
     List<ReasonableExpansionPanel> j = [
       if (info.methods.isNotEmpty) ReasonableExpansionPanel(
-        headerBuilder: (c, opened) => const Text("Methods"), 
+        headerBuilder: (c, opened) => Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            "Methods", 
+            style: TextTheme.of(context).titleMedium,
+          ),
+        ), 
         body: Theme(
           data: Theme.of(context).copyWith(colorScheme: methodScheme),
           child: Column(
@@ -31,28 +38,26 @@ class DomainPage extends StatelessWidget {
     ];
     return Column(
       spacing: 4,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // `domain.name` domain
         Row(
-          spacing: 5,
+          spacing: 8,
           mainAxisSize: MainAxisSize.min,
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.grey,
-                borderRadius: BorderRadius.circular(8)
-              ),
-              child: Text(
-                info.name, 
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontFamily: "consola"),
-              ),
+            Text(
+              info.name, 
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontFamily: "consola"),
             ),
             Text("domain", style: Theme.of(context).textTheme.headlineMedium,)
           ],
         ),
         // description
         if (info.description.isNotEmpty) Card(
-          child: Text(info.description, softWrap: true,),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(info.description, softWrap: true,),
+          ),
         ),
         // its content (methods, events, types)
         StatefulBuilder(
@@ -77,10 +82,4 @@ class ReasonableExpansionPanel extends ExpansionPanel {
   @override
   bool get isExpanded => _isExpanded;
   set isExpanded(bool g) => _isExpanded = g;
-}
-
-extension MopeString on String {
-  String truncate(int maxCharacters) {
-    return length > maxCharacters ? "${substring(maxCharacters-3)}..." : this;
-  }
 }

@@ -1,5 +1,8 @@
 
 // ignore: camel_case_types
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
 class _f {
   String name;
   String description;
@@ -38,7 +41,7 @@ class Method extends _f{
   Map<String, Parameter> parameters;
   Method(super.m)
   : parameters = {
-    for (final e in (m["parameters"] as List<Map<String,dynamic>>?) ?? [])
+    for (final e in (m["parameters"] as List<dynamic>?) ?? [])
     e["name"]: Parameter(e)
   };
 }
@@ -53,24 +56,35 @@ class Type {
   , description = m["description"] as String? ?? ""
   , type = m["type"] as String
   , properties = {
-    for (final e in (m["properties"] as List<Map<String,dynamic>>?) ?? [])
+    for (final e in (m["properties"] as List<dynamic>?) ?? [])
     e["name"]: Parameter(e)
   }
   ;
 }
 
-class Domain extends _f{
+class Domain {
+  String name;
+  String description;
   Map<String, Method> methods;
   Map<String, Type> types;
 
-  Domain(super.m)
-  : methods =  {
-    for (final e in (m["methods"] as List<Map<String, dynamic>>?) ?? [])
+  Domain(Map<String, dynamic> m)
+  : name = m["domain"] as String
+  , description = m["description"] as String? ?? ""
+  , methods =  {
+    for (final e in (m["commands"] as List<dynamic>?) ?? [])
     e["name"]: Method(e)
   }
   , types = {
-    for (final e in (m["types"] as List<Map<String, dynamic>>?) ?? [])
+    for (final e in (m["types"] as List<dynamic>?) ?? [])
     e["id"]: Type(e)
   }
   ;
 }
+
+
+Map<String, IconData> iconsForDomain = {
+  "DOM": Icons.list,
+  "Log": Icons.terminal,
+  "Level": Icons.map
+};

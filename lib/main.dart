@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:gdp_playground/confe.dart';
@@ -12,41 +13,33 @@ import 'package:go_router/go_router.dart';
 
 import 'protocol_definition.dart';
 
-late final WebSocketChannel socket;
-late final Client client;
-
 CustomTransitionPage fadeTransition(Widget child) => CustomTransitionPage(
   child: child, 
   transitionDuration: Duration(milliseconds: 500),
   transitionsBuilder: (ctx, a, sa, c) => FadeTransition(
     opacity: a.drive(CurveTween(
-      curve: Interval(1/3*2, 1, curve: Easing.emphasizedDecelerate)
+      curve: Interval(
+        0, 1/3,
+        curve: Easing.emphasizedAccelerate
+      )
     )),
-    child: FadeTransition(
-      opacity: sa.drive(CurveTween(
-        curve: Interval(0,1/3*2, curve: Easing.emphasizedAccelerate),
-      )),
-      child: c,
+    child: ColoredBox(
+      color: Theme.of(ctx).colorScheme.surfaceContainerLowest,
+      child: FadeTransition(
+        opacity: a.drive(CurveTween(
+          curve: Interval(
+            1/3, 1,
+            curve: Easing.emphasizedDecelerate
+          )
+        )),
+        child: c,
+      ),
     ),
   )
 );
 
-class ChangeNotifier2 extends ChangeNotifier {
-  @override
-  void notifyListeners() {
-    super.notifyListeners();
-  }
-}
-final ChangeNotifier2 unsogged = ChangeNotifier2();
-
-class SoggyObserver extends NavigatorObserver {
-  @override
-  void didChangeTop(Route topRoute, Route? previousTopRoute) {
-  }
-}
 
 final _router = GoRouter(
-observers: [SoggyObserver()],
 errorPageBuilder: (ctx, s)=>fadeTransition(Center(
   child: Column(
     mainAxisSize: MainAxisSize.min,
@@ -87,8 +80,6 @@ routes: [
 ],
 );
 void main() {
-  socket = WebSocketChannel.connect(Uri.parse("ws://localhost:1412"));
-  client = Client(socket.cast<String>());
   runApp(const MyApp());
 }
 
@@ -102,28 +93,17 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: unsogged,
-    builder: (ctx,c) {
-      String currentPath;
-      try {currentPath = _router.state?.name ?? "main";}
-      on StateError {
-        currentPath = "main";
-      }
-      return MaterialApp.router(
-        routerConfig: _router,
-        title: 'g',
-        theme: ThemeData(
-          colorScheme: currentPath == "method"
-          ? methodScheme
-          : currentPath == "domain" 
-          ? domainScheme
-          : mainScheme,
-          useMaterial3: true,
-        ),
-      );
-    }
-  );
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      routerConfig: _router,
+      title: 'g',
+      themeMode: ThemeMode.dark,
+      theme: ThemeData(
+        colorScheme: mainScheme,
+        useMaterial3: true,
+      ),
+    );
+  }
 }
 
 class ShellPage extends StatefulWidget {
@@ -135,98 +115,145 @@ class ShellPage extends StatefulWidget {
 }
 
 class _ShellPageState extends State<ShellPage> {
+  
+  WebSocketChannel? socket;
+  Client? client;
   // shell is the main owner of it
   Map<String, Domain> domains = {};
-  bool disconnected = false;
+  bool disconnected = true;
   void connect([bool spamSetState = true]) {
+    if (!disconnected) return;
     disconnected = false;
-    client.listen().whenComplete((){
+    socket = WebSocketChannel.connect(Uri.parse("ws://localhost:1412"));
+    client = Client(socket!.cast<String>());
+    client!.listen().whenComplete((){
       disconnected = true;
-      if (spamSetState) setState((){});
+      setState((){});
     });
-    if (spamSetState) setState((){});
+    socket!.ready.then((e){
+    client!.sendRequest("getProtocolInformation").then((v){
+      domains = {
+        for (final e in jsonDecode(v! as String)["domains"] as List<dynamic>)
+        e["domain"]: Domain(e)
+      };
+      setState((){});
+    }, onError: (e){
+      disconnected = true;
+      debugPrint(e.toString());
+      setState((){});
+    });
+    });
+    setState((){});
   }
   @override
   void initState() {
     super.initState();
     connect(false);
-    client.sendRequest("getProtocolInformation").then((v){
-      domains = {
-        for (final e in (v! as Map<String, dynamic>)["domains"] as List<Map<String, dynamic>>)
-        e["domain"]: Domain(e)
-      };
-      setState((){});
-    });
   }
 
   bool useModalNavigation = false;
 
-  int drawerSelectedIndex = 0;
+  int drawerSelectedIndex = -1;
   @override
   Widget build(BuildContext context) {
     var drawer = NavigationDrawer(
       selectedIndex: drawerSelectedIndex,
       onDestinationSelected: (idx) {
         drawerSelectedIndex = idx;
-        _router.push("/${domains.values.toList()[idx].name}");
+        if (_router.state?.name == "method") {
+          _router.pop();
+        };
+        _router.replace("/${domains.values.toList()[idx].name}");
       },
       children: [
-        Text("Domains",style: Theme.of(context).textTheme.titleSmall),
+        Padding(
+          padding: const EdgeInsets.all(16.0).copyWith(left: 16*2),
+          child: Text("Domains",style: Theme.of(context).textTheme.titleSmall),
+        ),
         ...domains.values.map(
           (d)=>NavigationDrawerDestination(
-            icon: SizedBox.shrink(), 
+            icon: Icon(Icons.mode), 
             label: Text(d.name),
           )
         )
       ],
     );
-    var box = DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(50),
-        color: Theme.of(context).colorScheme.surface
-      ),
-      child: disconnected
-      ? Center(
-        child: Column(
-          children: [
-            Text("Launch Geometry Dash and reconnect to start using the playground!"),
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 100),
-              child: FilledButton(
-                onPressed: connect,
-                child: Text("Reconnect"),
-              ),
-            )
-          ]
-        )
-      )
-      : domains.isEmpty 
-        ? Center(child: CircularProgressIndicator(),) 
-        : widget.child,
-    );
-    return Neuro(
-      domains: UnmodifiableMapView(domains),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          title: Text("GD Devtools Protocol Playground"),
+    var box = Builder(
+      builder: (context) => DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(50),
+          ),
+          color: Theme.of(context).colorScheme.surfaceContainerLowest
         ),
-        body: useModalNavigation ? box : Row(children: [
-          // https://github.com/flutter/flutter/issues/123113
-          Theme(
-            data: Theme.of(context).copyWith(
-              drawerTheme: DrawerThemeData(
-                elevation: 0,
-                shape: const RoundedRectangleBorder(),
-                endShape: const RoundedRectangleBorder(),
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: disconnected
+          ? Center(
+            child: Column(
+              children: [
+                Text("Launch Geometry Dash and reconnect to start using the playground!"),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: 150),
+                  child: FilledButton(
+                    onPressed: connect,
+                    child: Text("Reconnect"),
+                  ),
+                )
+              ]
+            )
+          )
+          : domains.isEmpty 
+            ? Center(child: CircularProgressIndicator(),) 
+            : SizedBox.expand(
+              child: SingleChildScrollView(
+                child: widget.child
               )
             ),
-            child: drawer,
+        )
+      )
+    );
+    String name = GoRouter.of(context).state!.name!;
+    var t = ThemeData(
+      colorScheme: 
+      (disconnected
+      ? mainScheme
+      : name == "method"
+        ? methodScheme
+        : name == "domain"
+          ? domainScheme
+          : mainScheme
+      )
+    );
+    debugPrint(name);
+    return Neuro(
+      domains: UnmodifiableMapView(domains),
+      child: Theme(
+        data: t,
+        child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            title: Text("GD Devtools Protocol Playground"),
           ),
-          box 
-        ],),
-        drawer: useModalNavigation ? drawer : null
+          body: useModalNavigation ? box : Row(children: [
+            // https://github.com/flutter/flutter/issues/123113
+            Builder(
+              builder: (context) => Theme(
+                data: Theme.of(context).copyWith(
+                  drawerTheme: DrawerThemeData(
+                    elevation: 0,
+                    shape: const RoundedRectangleBorder(),
+                    endShape: const RoundedRectangleBorder(),
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  )
+                ),
+                child: drawer,
+              ),
+            ),
+            Expanded(child: box) 
+          ],),
+          drawer: useModalNavigation ? drawer : null
+        ),
       ),
     );
   }

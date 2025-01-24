@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gdp_playground/confe.dart';
+import 'package:gdp_playground/extensions.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,21 +20,26 @@ class _MethodPageState extends State<MethodPage> {
   Widget build(BuildContext context) {
     return Column(
       spacing: 4,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // `domain.name` domain
         Row(
           spacing: 5,
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.grey,
-                borderRadius: BorderRadius.circular(8)
-              ),
-              child: Text(
-                widget.info.name, 
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontFamily: "consola"),
-              ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: IconButton(
+                icon: Icon(Icons.arrow_back),
+                onPressed: (){
+                  GoRouter.of(context).pop();
+                }
+              )
+            ),
+            Text(
+              widget.info.name, 
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontFamily: "consola"),
             ),
             Text("method", style: Theme.of(context).textTheme.headlineMedium,)
           ],
@@ -44,11 +49,17 @@ class _MethodPageState extends State<MethodPage> {
           child: Text(widget.info.description, softWrap: true,),
         ),
         // its content (methods, events, types)
-        StatefulBuilder(
+        if (widget.info.parameters.isNotEmpty) StatefulBuilder(
           builder: (context, setState) => ExpansionPanelList(
             children: [
               ExpansionPanel(
-                headerBuilder: (_,__)=>Text("Parameters"), 
+                headerBuilder: (_,__)=>Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    "Parameters", 
+                    style: TextTheme.of(context).titleMedium,
+                  ),
+                ), 
                 body: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: widget.info.parameters.values.map((e)=>ListTile(
@@ -78,10 +89,4 @@ class ReasonableExpansionPanel extends ExpansionPanel {
   @override
   bool get isExpanded => _isExpanded;
   set isExpanded(bool g) => _isExpanded = g;
-}
-
-extension MopeString on String {
-  String truncate(int maxCharacters) {
-    return length > maxCharacters ? "${substring(maxCharacters-3)}..." : this;
-  }
 }
