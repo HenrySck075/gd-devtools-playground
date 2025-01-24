@@ -228,8 +228,9 @@ class _ShellPageState extends State<ShellPage> {
     debugPrint(name);
     return Neuro(
       domains: UnmodifiableMapView(domains),
-      child: Theme(
+      child: AnimatedTheme(
         data: t,
+        curve: Easing.emphasizedDecelerate,
         child: Scaffold(
           appBar: AppBar(
             backgroundColor: Colors.transparent,
