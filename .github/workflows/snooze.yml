@@ -30,4 +30,15 @@ jobs:
         with:
           channel: stable
       - run: flutter pub get
-      - run: flutter build ${{ matrix.config.target }}
+      - name: Build
+        id: build
+        shell: bash
+        run: |
+          flutter build ${{ matrix.config.target }}
+          echo "output=$PWD/build/windows/x64/runner/Release" >> $GITHUB_OUTPUT
+      - name: zzz
+        uses: actions/upload-artifact@v4
+        with:
+          name: "build-${{ matrix.config.os }}"
+          path: |
+            ${{ steps.build.outputs.output }}/*.*
