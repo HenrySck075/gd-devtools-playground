@@ -1,13 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:gdp_playground/extensions.dart';
+import 'package:gdp_playground/g.dart';
 import 'package:gdp_playground/protocol_definition.dart';
+import 'package:gdp_playground/setting.dart';
 import 'package:go_router/go_router.dart';
+import 'package:json_rpc_2/json_rpc_2.dart';
 
 class MethodPage extends StatefulWidget {
   final Method info;
-
 
   const MethodPage({super.key, required this.info}); 
 
@@ -17,6 +18,38 @@ class MethodPage extends StatefulWidget {
 
 class _MethodPageState extends State<MethodPage> {
   bool paramsPanelExpanded = !(Platform.isAndroid || Platform.isIOS);
+
+  late final List<SettingNode> settingNodes;
+
+  @override
+  void initState() {
+    super.initState();
+    settingNodes = widget.info.parameters.values.map((e)=>SettingNode.adaptive(context, e)).toList();
+  }
+
+  ValueNotifier<String> response = ValueNotifier("Response will be set here!");
+
+  void executeCommand(BuildContext context) {
+    var client = Neuro.of(context).client;
+    var routeState = GoRouter.of(context).state!;
+
+    String method = "${routeState.pathParameters["domain"]}.${routeState.pathParameters["method"]}";
+    client.sendRequest(method, {for (final node in settingNodes) node.name: node.getValue()}).then((v){
+      response.value = v.toString();
+    }).catchError((e){
+      if (!context.mounted) return;
+      var err = e as RpcException;
+      if (err.code == -32601 && err.message.endsWith(" wasn't found.")) {
+        showDialog(
+          context: context, 
+          builder: (ctx) => AlertDialog(
+            title: Text("Not implemented"),
+            content: Text("The method is documented but not implemented in the mod. Sorry!"),
+          )
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +62,7 @@ class _MethodPageState extends State<MethodPage> {
           spacing: 7,
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
+          verticalDirection: VerticalDirection.up, //??
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
@@ -46,8 +80,8 @@ class _MethodPageState extends State<MethodPage> {
             Text("method", style: Theme.of(context).textTheme.headlineMedium,),
             Spacer(),
             FilledButton(
+              onPressed: ()=>executeCommand(context),
               child: Text("Execute"),
-              onPressed: (){},
             )
           ],
         ),
@@ -56,6 +90,18 @@ class _MethodPageState extends State<MethodPage> {
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(widget.info.description, softWrap: true,),
+          ),
+        ),
+        Container(
+          constraints: BoxConstraints(minHeight: 300),
+          color: Theme.of(context).cardColor,
+          padding: EdgeInsets.all(16),
+          child: ValueListenableBuilder(
+            valueListenable: response, 
+            builder: (_,v,__) => Text(
+              v,
+              style: TextStyle(fontFamily: "consola"),
+            )
           ),
         ),
         // its content (methods, events, types)
@@ -72,10 +118,7 @@ class _MethodPageState extends State<MethodPage> {
                 ), 
                 body: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: widget.info.parameters.values.map((e)=>ListTile(
-                    title: Text(e.name),
-                    subtitle: Text(e.description.truncate(77)),
-                  )).toList(),
+                  children: settingNodes,
                 ),
                 isExpanded: paramsPanelExpanded
               )

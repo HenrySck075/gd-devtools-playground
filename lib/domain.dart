@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:gdp_playground/confe.dart';
 import 'package:gdp_playground/extensions.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:go_router/go_router.dart';
@@ -70,6 +70,9 @@ class DomainPage extends StatelessWidget {
             },
           )
         ),
+        SizedBox(
+          height: kDebugMode ? 77 : 16,
+        )
       ],
     );
   }

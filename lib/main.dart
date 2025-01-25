@@ -124,6 +124,9 @@ class _ShellPageState extends State<ShellPage> {
   // shell is the main owner of it
   Map<String, Domain> domains = {};
   bool disconnected = true;
+
+  Client _clientResolve() {return client!;}
+
   void connect([bool spamSetState = true]) {
     if (!disconnected) return;
     disconnected = false;
@@ -236,6 +239,7 @@ class _ShellPageState extends State<ShellPage> {
     debugPrint(name);
     return Neuro(
       domains: UnmodifiableMapView(domains),
+      client: _clientResolve,
       child: AnimatedTheme(
         data: t,
         curve: Easing.emphasizedDecelerate,
