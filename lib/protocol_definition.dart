@@ -86,5 +86,9 @@ class Domain {
 Map<String, IconData> iconsForDomain = {
   "DOM": Icons.list,
   "Log": Icons.terminal,
-  "Level": Icons.map
+  "Level": Icons.map,
+  "Game": Icons.games, // TODO: find a better one
+  "Network": Icons.wifi,
+  "Runtime": Icons.phone_android,
+  "Mod": Icons.change_circle_outlined
 };

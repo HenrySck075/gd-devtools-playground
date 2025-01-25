@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:gdp_playground/confe.dart';
 import 'package:gdp_playground/extensions.dart';
@@ -20,20 +22,17 @@ class DomainPage extends StatelessWidget {
             style: TextTheme.of(context).titleMedium,
           ),
         ), 
-        body: Theme(
-          data: Theme.of(context).copyWith(colorScheme: methodScheme),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: info.methods.values.map((e)=>ListTile(
-              title: Text(e.name),
-              subtitle: Text(e.description.truncate(77)),
-              onTap: (){
-                GoRouter.of(context).go("/${info.name}/method/${e.name}");
-              },
-            )).toList(),
-          ),
+        body: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: info.methods.values.map((e)=>ListTile(
+            title: Text(e.name),
+            subtitle: Text(e.description.truncate(77)),
+            onTap: (){
+              GoRouter.of(context).go("/${info.name}/method/${e.name}");
+            },
+          )).toList(),
         ),
-        isExpanded: false
+        isExpanded: !(Platform.isAndroid || Platform.isIOS)
       )
     ];
     return Column(
@@ -62,6 +61,7 @@ class DomainPage extends StatelessWidget {
         // its content (methods, events, types)
         StatefulBuilder(
           builder: (context, setState) => ExpansionPanelList(
+            materialGapSize: 0,
             children: j,
             expansionCallback: (dex, opened) {
               setState((){
@@ -69,7 +69,7 @@ class DomainPage extends StatelessWidget {
               });
             },
           )
-        )
+        ),
       ],
     );
   }

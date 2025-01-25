@@ -13,9 +13,10 @@ import 'package:go_router/go_router.dart';
 
 import 'protocol_definition.dart';
 
-CustomTransitionPage fadeTransition(Widget child) => CustomTransitionPage(
+CustomTransitionPage fadeTransition(Widget child, String valueKey) => CustomTransitionPage(
   child: child, 
-  transitionDuration: Duration(milliseconds: 500),
+  key: ValueKey(valueKey),
+  transitionDuration: Duration(milliseconds: 200),
   transitionsBuilder: (ctx, a, sa, c) => FadeTransition(
     opacity: a.drive(CurveTween(
       curve: Interval(
@@ -24,7 +25,7 @@ CustomTransitionPage fadeTransition(Widget child) => CustomTransitionPage(
       )
     )),
     child: ColoredBox(
-      color: Theme.of(ctx).colorScheme.surfaceContainerLowest,
+      color: Theme.of(ctx).colorScheme.surface,
       child: FadeTransition(
         opacity: a.drive(CurveTween(
           curve: Interval(
@@ -32,8 +33,8 @@ CustomTransitionPage fadeTransition(Widget child) => CustomTransitionPage(
             curve: Easing.emphasizedDecelerate
           )
         )),
-        child: c,
-      ),
+        child: c
+      )
     ),
   )
 );
@@ -47,7 +48,7 @@ errorPageBuilder: (ctx, s)=>fadeTransition(Center(
       Text("Not found", style: TextTheme.of(ctx).headlineMedium,)
     ],
   ),
-)),
+), "err"),
 routes: [
   ShellRoute(
     builder: (ctx, state, child) => ShellPage(child: child),
@@ -55,20 +56,22 @@ routes: [
       GoRoute(
         path: "/",
         name: "main",
-        pageBuilder: (ctx, s) => fadeTransition(const HomePage()),
+        pageBuilder: (ctx, s) => fadeTransition(const HomePage(), "main"),
         routes: [
           GoRoute(
             name: "domain",
             path: ":domain",
             pageBuilder: (ctx, s) => fadeTransition(
-              DomainPage(info: Neuro.of(ctx).domains[s.pathParameters["domain"]]!)
+              DomainPage(info: Neuro.of(ctx).domains[s.pathParameters["domain"]]!),
+              "domain:${s.pathParameters["domain"]}"
             ),
             routes: [
               GoRoute(
                 path: "method/:method",
                 name: "method",
                 pageBuilder: (ctx, s) => fadeTransition(
-                  MethodPage(info: Neuro.of(ctx).domains[s.pathParameters["domain"]!]!.methods[s.pathParameters["method"]]!)
+                  MethodPage(info: Neuro.of(ctx).domains[s.pathParameters["domain"]!]!.methods[s.pathParameters["method"]]!),
+                  "method:${s.pathParameters["method"]}"
                 )
               )
             ]
@@ -133,7 +136,9 @@ class _ShellPageState extends State<ShellPage> {
     socket!.ready.then((e){
     client!.sendRequest("getProtocolInformation").then((v){
       domains = {
-        for (final e in jsonDecode(v! as String)["domains"] as List<dynamic>)
+        for (final e in (jsonDecode(v! as String)["domains"] as List<dynamic>)..sort(
+          (oat,meal)=>(oat["domain"] as String).compareTo(meal["domain"]))
+        )
         e["domain"]: Domain(e)
       };
       setState((){});
@@ -156,13 +161,11 @@ class _ShellPageState extends State<ShellPage> {
   int drawerSelectedIndex = -1;
   @override
   Widget build(BuildContext context) {
+    if (disconnected) drawerSelectedIndex = -1;
     var drawer = NavigationDrawer(
       selectedIndex: drawerSelectedIndex,
       onDestinationSelected: (idx) {
         drawerSelectedIndex = idx;
-        if (_router.state?.name == "method") {
-          _router.pop();
-        };
         _router.replace("/${domains.values.toList()[idx].name}");
       },
       children: [
@@ -172,7 +175,7 @@ class _ShellPageState extends State<ShellPage> {
         ),
         ...domains.values.map(
           (d)=>NavigationDrawerDestination(
-            icon: Icon(Icons.mode), 
+            icon: Icon(iconsForDomain.containsKey(d.name) ? iconsForDomain[d.name] : Icons.mode), 
             label: Text(d.name),
           )
         )
@@ -182,9 +185,9 @@ class _ShellPageState extends State<ShellPage> {
       builder: (context) => DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(50),
+            topLeft: Radius.circular(16),
           ),
-          color: Theme.of(context).colorScheme.surfaceContainerLowest
+          color: Theme.of(context).colorScheme.surface
         ),
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -205,10 +208,15 @@ class _ShellPageState extends State<ShellPage> {
           )
           : domains.isEmpty 
             ? Center(child: CircularProgressIndicator(),) 
-            : SizedBox.expand(
-              child: SingleChildScrollView(
-                child: widget.child
-              )
+            // intrinsics my ass
+            : CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  fillOverscroll: true,
+                  hasScrollBody: false,
+                  child: widget.child // kms
+                ),
+              ],
             ),
         )
       )
@@ -231,29 +239,33 @@ class _ShellPageState extends State<ShellPage> {
       child: AnimatedTheme(
         data: t,
         curve: Easing.emphasizedDecelerate,
-        child: Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            title: Text("GD Devtools Protocol Playground"),
-          ),
-          body: useModalNavigation ? box : Row(children: [
-            // https://github.com/flutter/flutter/issues/123113
-            Builder(
-              builder: (context) => Theme(
-                data: Theme.of(context).copyWith(
-                  drawerTheme: DrawerThemeData(
-                    elevation: 0,
-                    shape: const RoundedRectangleBorder(),
-                    endShape: const RoundedRectangleBorder(),
-                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                  )
-                ),
-                child: drawer,
+        child: Builder(
+          builder: (context) {
+            return Scaffold(
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+                title: Text("GD Devtools Protocol Playground"),
               ),
-            ),
-            Expanded(child: box) 
-          ],),
-          drawer: useModalNavigation ? drawer : null
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+              body: useModalNavigation ? box : Row(children: [
+                // https://github.com/flutter/flutter/issues/123113
+                Theme(
+                  data: Theme.of(context).copyWith(
+                    drawerTheme: DrawerThemeData(
+                      elevation: 0,
+                      shape: const RoundedRectangleBorder(),
+                      endShape: const RoundedRectangleBorder(),
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                    )
+                  ),
+                  child: drawer,
+                ),
+                Expanded(child: box) 
+              ],),
+              drawer: useModalNavigation ? drawer : null
+            );
+          }
         ),
       ),
     );

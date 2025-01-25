@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:gdp_playground/extensions.dart';
 import 'package:gdp_playground/protocol_definition.dart';
@@ -14,7 +16,7 @@ class MethodPage extends StatefulWidget {
 }
 
 class _MethodPageState extends State<MethodPage> {
-  bool paramsPanelExpanded = false;
+  bool paramsPanelExpanded = !(Platform.isAndroid || Platform.isIOS);
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +26,7 @@ class _MethodPageState extends State<MethodPage> {
       children: [
         // `domain.name` domain
         Row(
-          spacing: 5,
+          spacing: 7,
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -41,12 +43,20 @@ class _MethodPageState extends State<MethodPage> {
               widget.info.name, 
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontFamily: "consola"),
             ),
-            Text("method", style: Theme.of(context).textTheme.headlineMedium,)
+            Text("method", style: Theme.of(context).textTheme.headlineMedium,),
+            Spacer(),
+            FilledButton(
+              child: Text("Execute"),
+              onPressed: (){},
+            )
           ],
         ),
         // description
         if (widget.info.description.isNotEmpty) Card(
-          child: Text(widget.info.description, softWrap: true,),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(widget.info.description, softWrap: true,),
+          ),
         ),
         // its content (methods, events, types)
         if (widget.info.parameters.isNotEmpty) StatefulBuilder(
