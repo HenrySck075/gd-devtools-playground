@@ -2,8 +2,6 @@ name: Build Flutter app
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ "master" ]
 
 jobs:
   build:
@@ -34,11 +32,15 @@ jobs:
         shell: bash
         run: |
           flutter build ${{ matrix.config.target }}
-          ls $PWD
-          echo "output=$PWD/build/windows/x64/runner/Release" >> $GITHUB_OUTPUT
+          output_dir=${{ github.workspace }}/build/windows/x64/runner/Release
+          if [ ${{ matrix.config.target }} = "windows" ]; then
+            OUTPUT_DIR=$(cygpath -wa "$OUTPUT_DIR")
+          else
+            OUTPUT_DIR=$(realpath "$OUTPUT_DIR")
+          fi
       - name: zzz
         uses: actions/upload-artifact@v4
         with:
           name: "build-${{ matrix.config.os }}"
           path: |
-            ${{ steps.build.outputs.output }}/*.*
+            ${{ steps.build.outputs.output }}
