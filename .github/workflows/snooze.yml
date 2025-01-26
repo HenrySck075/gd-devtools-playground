@@ -32,7 +32,7 @@ jobs:
         shell: bash
         run: |
           flutter build ${{ matrix.config.target }}
-          output_dir=${{ github.workspace }}/build/windows/x64/runner/Release
+          OUTPUT_DIR=${{ github.workspace }}/build/windows/x64/runner/Release
           if [ ${{ matrix.config.target }} = "windows" ]; then
             OUTPUT_DIR=$(cygpath -wa "$OUTPUT_DIR")
           else
