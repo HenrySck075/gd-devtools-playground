@@ -25,9 +25,11 @@ class _MethodPageState extends State<MethodPage> {
   void initState() {
     super.initState();
     settingNodes = widget.info.parameters.values.map((e)=>SettingNode.adaptive(context, e)).toList();
+
   }
 
   ValueNotifier<String> response = ValueNotifier("Response will be set here!");
+  ValueNotifier<String> request = ValueNotifier("{}");
 
   void executeCommand(BuildContext context) {
     var client = Neuro.of(context).client;
@@ -91,19 +93,7 @@ class _MethodPageState extends State<MethodPage> {
             padding: const EdgeInsets.all(16.0),
             child: Text(widget.info.description, softWrap: true,),
           ),
-        ),
-        Container(
-          constraints: BoxConstraints(minHeight: 300),
-          color: Theme.of(context).cardColor,
-          padding: EdgeInsets.all(16),
-          child: ValueListenableBuilder(
-            valueListenable: response, 
-            builder: (_,v,__) => Text(
-              v,
-              style: TextStyle(fontFamily: "consola"),
-            )
-          ),
-        ),
+        ), 
         // its content (methods, events, types)
         if (widget.info.parameters.isNotEmpty) StatefulBuilder(
           builder: (context, setState) => ExpansionPanelList(
@@ -129,7 +119,29 @@ class _MethodPageState extends State<MethodPage> {
               });
             },
           )
-        )
+        ),
+        Container(
+          color: Theme.of(context).cardColor,
+          padding: EdgeInsets.all(16),
+          child: ValueListenableBuilder(
+            valueListenable: request, 
+            builder: (_,v,__) => Text(
+              v,
+              style: TextStyle(fontFamily: "consola"),
+            )
+          ),
+        ),
+        Container(
+          color: Theme.of(context).cardColor,
+          padding: EdgeInsets.all(16),
+          child: ValueListenableBuilder(
+            valueListenable: response, 
+            builder: (_,v,__) => Text(
+              v,
+              style: TextStyle(fontFamily: "consola"),
+            )
+          ),
+        ),
       ],
     );
   }

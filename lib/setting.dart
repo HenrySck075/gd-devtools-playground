@@ -79,7 +79,7 @@ class StringSettingNode extends SettingNode {
 class _StringSettingNodeState extends _SettingNodeState<StringSettingNode> {
   @override
   Widget buildTrailingNode(BuildContext context) => SizedBox(
-    width: 120,
+    width: 240,
     child: TextField(
       controller: widget._controller,
     ),
