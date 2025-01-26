@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gdp_playground/extensions.dart';
@@ -5,13 +6,16 @@ import 'package:gdp_playground/g.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:go_router/go_router.dart';
 
-class SettingNode extends StatefulWidget {
+class SettingUpdated extends Notification {
   final String name;
-  final String description;
-  SettingNode(Parameter parameter, {super.key})
-  : name = parameter.name
-  , description = parameter.description
-  ;
+  final dynamic value;
+
+  SettingUpdated({required this.name, required this.value});
+}
+
+class SettingNode extends StatefulWidget {
+  final Parameter parameter;
+  SettingNode(this.parameter, {super.key});
 
   static SettingNode adaptive(BuildContext context, Parameter parameter) {
     String? type = parameter.primitive 
@@ -20,6 +24,7 @@ class SettingNode extends StatefulWidget {
     if (type == "boolean") return BoolSettingNode(parameter);
     if (type == "string") return StringSettingNode(parameter);
     if (type == "integer") return IntSettingNode(parameter);
+    if (type == "number") return NumberSettingNode(parameter);
 
     return SettingNode(parameter);
   }
@@ -35,9 +40,18 @@ class _SettingNodeState<T extends SettingNode> extends State<T> {
 
   @override
   Widget build(BuildContext context) => ListTile(
-    title: Text(widget.name),
-    subtitle: Text(widget.description.truncate(77).replaceAll("\n", " ")),
+    title: Text(widget.parameter.name),
+    subtitle: Text(widget.parameter.description.truncate(77).replaceAll("\n", " ")),
     trailing: buildTrailingNode(context),
+    onTap: kDebugMode ? (){
+      showDialog(
+        context: context,
+        builder: (c)=>AlertDialog(
+          title: Text("iejiofwjefjwe"),
+          content: Text("name: ${widget.parameter.name}\ntype: ${widget.parameter.type} (${widget.parameter.primitive})"),
+        )
+      );
+    } : null,
   );
 }
 
@@ -60,28 +74,41 @@ class _BoolSettingNodeState extends _SettingNodeState<BoolSettingNode> {
       value: v, 
       onChanged: (nv) {
         widget.value.value = nv??false;
+        SettingUpdated(name: widget.parameter.name, value: widget.value.value).dispatch(context);
       }
     )
   );
 }
 
 
+// ignore: must_be_immutable
 class StringSettingNode extends SettingNode {
-  final TextEditingController _controller = TextEditingController();
-
+  String text = "";
   @override
-  dynamic getValue() {return _controller.text;}
+  dynamic getValue() {return text;}
 
   StringSettingNode(super.parameter, {super.key});
   @override
   State<SettingNode> createState() => _StringSettingNodeState();
 }
 class _StringSettingNodeState extends _SettingNodeState<StringSettingNode> {
+  final TextEditingController _controller = TextEditingController();
+  
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener((){
+      widget.text = _controller.text;
+      if (context.mounted) {
+        SettingUpdated(name: widget.parameter.name, value: widget.text).dispatch(context);
+      }
+    });
+  }
   @override
   Widget buildTrailingNode(BuildContext context) => SizedBox(
     width: 240,
     child: TextField(
-      controller: widget._controller,
+      controller: _controller,
     ),
   );
 }
@@ -97,13 +124,16 @@ class IntSettingNode extends SettingNode {
   State<SettingNode> createState() => _IntSettingNodeState();
 }
 class _IntSettingNodeState extends _SettingNodeState<IntSettingNode> {
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _controller = TextEditingController(text: "0");
 
   @override
   void initState() {
     super.initState();
     _controller.addListener((){
       widget.value = int.tryParse(_controller.text);
+      if (context.mounted) {
+        SettingUpdated(name: widget.parameter.name, value: widget.value).dispatch(context);
+      }
     });
   }
   @override
@@ -119,7 +149,7 @@ class _IntSettingNodeState extends _SettingNodeState<IntSettingNode> {
     children: [
       IconButton(
         onPressed: (){
-          _controller.text = (int.parse(_controller.text) - 1).toString();
+          _controller.text = (int.parse(_controller.text.isEmpty ? "0" : _controller.text) - 1).toString();
         }, 
         icon: Icon(Icons.arrow_left)
       ),
@@ -128,7 +158,7 @@ class _IntSettingNodeState extends _SettingNodeState<IntSettingNode> {
         child: TextField(
           keyboardType: TextInputType.number,
           inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly
+            FilteringTextInputFormatter.allow(RegExp(r"-?[0-9]+"))
           ],
           controller: _controller,
           textAlign: TextAlign.center,
@@ -136,10 +166,53 @@ class _IntSettingNodeState extends _SettingNodeState<IntSettingNode> {
       ),
       IconButton(
         onPressed: (){
-          _controller.text = (int.parse(_controller.text) + 1).toString();
+          _controller.text = (int.parse(_controller.text.isEmpty ? "0" : _controller.text) + 1).toString();
         }, 
         icon: Icon(Icons.arrow_right)
       ),
     ],
+  );
+}
+
+// ignore: must_be_immutable
+class NumberSettingNode extends SettingNode {
+  double? value;
+  @override
+  dynamic getValue() {return value ?? 0;}
+
+  NumberSettingNode(super.parameter, {super.key});
+@override
+  State<SettingNode> createState() => _NumberSettingNodeState();
+}
+class _NumberSettingNodeState extends _SettingNodeState<NumberSettingNode> {
+  final TextEditingController _controller = TextEditingController(text: "0");
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener((){
+      widget.value = double.tryParse(_controller.text);
+      if (context.mounted) {
+        SettingUpdated(name: widget.parameter.name, value: widget.value).dispatch(context);
+      }
+    });
+  }
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+  }
+
+  @override
+  Widget buildTrailingNode(BuildContext context) => SizedBox(
+    width: 120,
+    child: TextField(
+      keyboardType: TextInputType.number,
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r"-?([0-9]*[.])?[0-9]+"))
+      ],
+      controller: _controller,
+      textAlign: TextAlign.center,
+    ),
   );
 }

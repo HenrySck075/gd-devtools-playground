@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gdp_playground/confe.dart';
 import 'package:gdp_playground/domain.dart';
 import 'package:gdp_playground/g.dart';
@@ -164,11 +165,16 @@ class _ShellPageState extends State<ShellPage> {
   int drawerSelectedIndex = -1;
   @override
   Widget build(BuildContext context) {
-    if (disconnected) drawerSelectedIndex = -1;
+    if (disconnected) {
+      drawerSelectedIndex = -1;
+    } else if (domains.isNotEmpty && _router.state != null && _router.state!.name!="main") {
+      drawerSelectedIndex = domains.keys.indexed.firstWhere(
+        (g)=>g.$2 == _router.state!.pathParameters["domain"]
+      ).$1;
+    }
     var drawer = NavigationDrawer(
       selectedIndex: drawerSelectedIndex,
       onDestinationSelected: (idx) {
-        drawerSelectedIndex = idx;
         _router.replace("/${domains.values.toList()[idx].name}");
       },
       children: [
@@ -236,40 +242,46 @@ class _ShellPageState extends State<ShellPage> {
           : mainScheme
       )
     );
-    debugPrint(name);
-    return Neuro(
-      domains: UnmodifiableMapView(domains),
-      client: _clientResolve,
-      child: AnimatedTheme(
-        data: t,
-        curve: Easing.emphasizedDecelerate,
-        child: Builder(
-          builder: (context) {
-            return Scaffold(
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                title: Text("GD Devtools Protocol Playground"),
-              ),
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-              body: useModalNavigation ? box : Row(children: [
-                // https://github.com/flutter/flutter/issues/123113
-                Theme(
-                  data: Theme.of(context).copyWith(
-                    drawerTheme: DrawerThemeData(
-                      elevation: 0,
-                      shape: const RoundedRectangleBorder(),
-                      endShape: const RoundedRectangleBorder(),
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                    )
-                  ),
-                  child: drawer,
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.arrowLeft, alt: true): () {
+          GoRouter.of(context).pop();
+        }
+      },
+      child: Neuro(
+        domains: UnmodifiableMapView(domains),
+        client: _clientResolve,
+        child: AnimatedTheme(
+          data: t,
+          curve: Easing.emphasizedDecelerate,
+          child: Builder(
+            builder: (context) {
+              return Scaffold(
+                appBar: AppBar(
+                  backgroundColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
+                  title: Text("GD Devtools Protocol Playground"),
                 ),
-                Expanded(child: box) 
-              ],),
-              drawer: useModalNavigation ? drawer : null
-            );
-          }
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                body: useModalNavigation ? box : Row(children: [
+                  // https://github.com/flutter/flutter/issues/123113
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      drawerTheme: DrawerThemeData(
+                        elevation: 0,
+                        shape: const RoundedRectangleBorder(),
+                        endShape: const RoundedRectangleBorder(),
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                      )
+                    ),
+                    child: drawer,
+                  ),
+                  Expanded(child: box) 
+                ],),
+                drawer: useModalNavigation ? drawer : null
+              );
+            }
+          ),
         ),
       ),
     );

@@ -40,16 +40,19 @@ class DomainPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // `domain.name` domain
-        Row(
-          spacing: 8,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              info.name, 
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontFamily: "consola"),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: info.name, 
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontFamily: "consola"),
+                ),
+                TextSpan(text: " domain", style: Theme.of(context).textTheme.headlineMedium,)
+              ],
             ),
-            Text("domain", style: Theme.of(context).textTheme.headlineMedium,)
-          ],
+          ),
         ),
         // description
         if (info.description.isNotEmpty) Card(

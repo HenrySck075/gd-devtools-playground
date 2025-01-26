@@ -34,6 +34,8 @@ dependencies:
   web_socket_channel: ^3.0.2
   go_router: ^14.6.3
   json_rpc_2: ^3.0.3
+  flutter_markdown: ^0.7.5
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
