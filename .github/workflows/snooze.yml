@@ -38,6 +38,7 @@ jobs:
           else
             OUTPUT_DIR=$(realpath "$OUTPUT_DIR")
           fi
+          echo "output=$OUTPUT_DIR" >> $GITHUB_OUTPUT
       - name: zzz
         uses: actions/upload-artifact@v4
         with:

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gdp_playground/confe.dart';
 import 'package:gdp_playground/domain.dart';
+import 'package:gdp_playground/events.dart';
 import 'package:gdp_playground/g.dart';
 import 'package:gdp_playground/home.dart';
 import 'package:gdp_playground/method.dart';
@@ -21,8 +22,8 @@ CustomTransitionPage fadeTransition(Widget child, String valueKey) => CustomTran
   transitionsBuilder: (ctx, a, sa, c) => FadeTransition(
     opacity: a.drive(CurveTween(
       curve: Interval(
-        0, 1/3,
-        curve: Easing.emphasizedAccelerate
+        0, 1/3*(a.isForwardOrCompleted ? 1 : 2),
+        curve: a.isForwardOrCompleted ? Easing.emphasizedAccelerate : Easing.emphasizedDecelerate
       )
     )),
     child: ColoredBox(
@@ -30,8 +31,8 @@ CustomTransitionPage fadeTransition(Widget child, String valueKey) => CustomTran
       child: FadeTransition(
         opacity: a.drive(CurveTween(
           curve: Interval(
-            1/3, 1,
-            curve: Easing.emphasizedDecelerate
+            1/3*(a.isForwardOrCompleted ? 1 : 2), 1,
+            curve: a.isForwardOrCompleted ? Easing.emphasizedDecelerate : Easing.emphasizedAccelerate
           )
         )),
         child: c
@@ -73,6 +74,14 @@ routes: [
                 pageBuilder: (ctx, s) => fadeTransition(
                   MethodPage(info: Neuro.of(ctx).domains[s.pathParameters["domain"]!]!.methods[s.pathParameters["method"]]!),
                   "method:${s.pathParameters["method"]}"
+                )
+              ),
+              GoRoute(
+                path: "event/:event",
+                name: "event",
+                pageBuilder: (ctx, s) => fadeTransition(
+                  EventPage(info: Neuro.of(ctx).domains[s.pathParameters["domain"]!]!.events[s.pathParameters["event"]]!),
+                  "event:${s.pathParameters["event"]}"
                 )
               )
             ]
@@ -124,13 +133,14 @@ class _ShellPageState extends State<ShellPage> {
   Client? client;
   // shell is the main owner of it
   Map<String, Domain> domains = {};
-  bool disconnected = true;
+  bool? disconnected = true;
 
   Client _clientResolve() {return client!;}
+  WebSocketChannel _channelResolve() {return socket!;}
 
   void connect([bool spamSetState = true]) {
-    if (!disconnected) return;
-    disconnected = false;
+    if (disconnected == false) return;
+    disconnected = null;
     socket = WebSocketChannel.connect(Uri.parse("ws://localhost:1412"));
     client = Client(socket!.cast<String>());
     client!.listen().whenComplete((){
@@ -138,19 +148,20 @@ class _ShellPageState extends State<ShellPage> {
       setState((){});
     });
     socket!.ready.then((e){
-    client!.sendRequest("getProtocolInformation").then((v){
-      domains = {
-        for (final e in (jsonDecode(v! as String)["domains"] as List<dynamic>)..sort(
-          (oat,meal)=>(oat["domain"] as String).compareTo(meal["domain"]))
-        )
-        e["domain"]: Domain(e)
-      };
-      setState((){});
-    }, onError: (e){
-      disconnected = true;
-      debugPrint(e.toString());
-      setState((){});
-    });
+      disconnected = false;
+      client!.sendRequest("getProtocolInformation").then((v){
+        domains = {
+          for (final e in (jsonDecode(v! as String)["domains"] as List<dynamic>)..sort(
+            (oat,meal)=>(oat["domain"] as String).compareTo(meal["domain"]))
+          )
+          e["domain"]: Domain(e)
+        };
+        setState((){});
+      }, onError: (e){
+        disconnected = true;
+        debugPrint(e.toString());
+        setState((){});
+      });
     });
     setState((){});
   }
@@ -165,7 +176,7 @@ class _ShellPageState extends State<ShellPage> {
   int drawerSelectedIndex = -1;
   @override
   Widget build(BuildContext context) {
-    if (disconnected) {
+    if (disconnected != false) {
       drawerSelectedIndex = -1;
     } else if (domains.isNotEmpty && _router.state != null && _router.state!.name!="main") {
       drawerSelectedIndex = domains.keys.indexed.firstWhere(
@@ -200,7 +211,7 @@ class _ShellPageState extends State<ShellPage> {
         ),
         child: Padding(
           padding: EdgeInsets.all(16),
-          child: disconnected
+          child: disconnected == true
           ? Center(
             child: Column(
               children: [
@@ -215,7 +226,7 @@ class _ShellPageState extends State<ShellPage> {
               ]
             )
           )
-          : domains.isEmpty 
+          : domains.isEmpty || disconnected == null
             ? Center(child: CircularProgressIndicator(),) 
             // intrinsics my ass
             : CustomScrollView(
@@ -233,14 +244,14 @@ class _ShellPageState extends State<ShellPage> {
     String name = GoRouter.of(context).state!.name!;
     var t = ThemeData(
       colorScheme: 
-      (disconnected
+      disconnected != false
       ? mainScheme
       : name == "method"
         ? methodScheme
         : name == "domain"
           ? domainScheme
           : mainScheme
-      )
+      
     );
     return CallbackShortcuts(
       bindings: {
@@ -251,6 +262,7 @@ class _ShellPageState extends State<ShellPage> {
       child: Neuro(
         domains: UnmodifiableMapView(domains),
         client: _clientResolve,
+        channel: _channelResolve,
         child: AnimatedTheme(
           data: t,
           curve: Easing.emphasizedDecelerate,

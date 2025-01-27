@@ -1,7 +1,6 @@
 
 // ignore: camel_case_types
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class _f {
   String name;
@@ -37,11 +36,20 @@ class EnumParameter extends Parameter {
 }
 
 
-class Method extends _f{
+class Event extends _f{
   Map<String, Parameter> parameters;
-  Method(super.m)
+  Event(super.m)
   : parameters = {
     for (final e in (m["parameters"] as List<dynamic>?) ?? [])
+    e["name"]: Parameter(e)
+  };
+}
+
+class Method extends Event {
+  Map<String, Parameter> returns;
+  Method(super.m)
+  : returns =  {
+    for (final e in (m["returns"] as List<dynamic>?) ?? [])
     e["name"]: Parameter(e)
   };
 }
@@ -66,6 +74,7 @@ class Domain {
   String name;
   String description;
   Map<String, Method> methods;
+  Map<String, Event> events;
   Map<String, Type> types;
 
   Domain(Map<String, dynamic> m)
@@ -74,6 +83,10 @@ class Domain {
   , methods =  {
     for (final e in (m["commands"] as List<dynamic>?) ?? [])
     e["name"]: Method(e)
+  }
+  , events =  {
+    for (final e in (m["events"] as List<dynamic>?) ?? [])
+    e["name"]: Event(e)
   }
   , types = {
     for (final e in (m["types"] as List<dynamic>?) ?? [])

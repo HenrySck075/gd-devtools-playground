@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:gdp_playground/confe.dart';
 import 'package:gdp_playground/extensions.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gdp_playground/expansion_panel_2.dart';
 
 class DomainPage extends StatelessWidget {
   final Domain info;
@@ -15,6 +17,7 @@ class DomainPage extends StatelessWidget {
   Widget build(BuildContext context) {
     List<ReasonableExpansionPanel> j = [
       if (info.methods.isNotEmpty) ReasonableExpansionPanel(
+        name: "methods",
         headerBuilder: (c, opened) => Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
@@ -29,6 +32,27 @@ class DomainPage extends StatelessWidget {
             subtitle: Text(e.description.truncate(77)),
             onTap: (){
               GoRouter.of(context).go("/${info.name}/method/${e.name}");
+            },
+          )).toList(),
+        ),
+        isExpanded: !(Platform.isAndroid || Platform.isIOS)
+      ),
+      if (info.events.isNotEmpty) ReasonableExpansionPanel(
+        name: "events",
+        headerBuilder: (c, opened) => Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            "Events", 
+            style: TextTheme.of(context).titleMedium,
+          ),
+        ), 
+        body: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: info.events.values.map((e)=>ListTile(
+            title: Text(e.name),
+            subtitle: Text(e.description.truncate(77)),
+            onTap: (){
+              GoRouter.of(context).go("/${info.name}/event/${e.name}");
             },
           )).toList(),
         ),
@@ -62,16 +86,22 @@ class DomainPage extends StatelessWidget {
           ),
         ),
         // its content (methods, events, types)
-        StatefulBuilder(
-          builder: (context, setState) => ExpansionPanelList(
-            materialGapSize: 0,
-            children: j,
-            expansionCallback: (dex, opened) {
-              setState((){
-                j[dex].isExpanded = opened;
-              });
-            },
-          )
+        for (final panel in j)
+        Theme(
+          data: ThemeData(
+            colorScheme: panel.name == "methods" ? methodScheme : panel.name == "events" ? eventScheme : panel.name == "types" ? typeScheme : mainScheme
+          ),
+          child: StatefulBuilder(
+            builder: (context, setState) => ExpansionPanelList(
+              materialGapSize: 0,
+              children: [panel],
+              expansionCallback: (dex, opened) {
+                setState((){
+                  panel.isExpanded = opened;
+                });
+              },
+            )
+          ),
         ),
         SizedBox(
           height: kDebugMode ? 77 : 16,
@@ -79,13 +109,4 @@ class DomainPage extends StatelessWidget {
       ],
     );
   }
-}
-
-class ReasonableExpansionPanel extends ExpansionPanel {
-  bool _isExpanded;
-  ReasonableExpansionPanel({required super.headerBuilder, required super.body, bool isExpanded = false, super.canTapOnHeader, super.backgroundColor, super.splashColor, super.highlightColor}): _isExpanded = isExpanded;
-
-  @override
-  bool get isExpanded => _isExpanded;
-  set isExpanded(bool g) => _isExpanded = g;
 }

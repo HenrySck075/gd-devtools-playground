@@ -6,9 +6,9 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:gdp_playground/g.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:gdp_playground/setting.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:json_rpc_2/json_rpc_2.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class MethodPage extends StatefulWidget {
   final Method info;
@@ -113,18 +113,7 @@ class _MethodPageState extends State<MethodPage> {
               child: MarkdownBody(
                 data: widget.info.description,
                 selectable: false,
-                onTapLink: (text, href, title) {
-                  if (href!=null) {
-                    if (href.startsWith("method:")) {
-                      List<String> name = href.substring(7).split(".");
-                      GoRouter.of(context).push("/${name[0]}/method/${name[1]}");
-                    } else if (href.startsWith("domain:")) {
-                      GoRouter.of(context).push("/${href.substring(7)}");
-                    } else {
-                      launchUrl(Uri.parse(href));
-                    }
-                  }
-                },
+                onTapLink: (t,h,tt) => gdpOnTapLink(context, t, h, tt),
               ),
             ),
           ), 
@@ -197,13 +186,4 @@ class _MethodPageState extends State<MethodPage> {
       ),
     );
   }
-}
-
-class ReasonableExpansionPanel extends ExpansionPanel {
-  bool _isExpanded;
-  ReasonableExpansionPanel({required super.headerBuilder, required super.body, bool isExpanded = false, super.canTapOnHeader, super.backgroundColor, super.splashColor, super.highlightColor}): _isExpanded = isExpanded;
-
-  @override
-  bool get isExpanded => _isExpanded;
-  set isExpanded(bool g) => _isExpanded = g;
 }
