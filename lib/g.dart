@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:flutter/widgets.dart';
+import 'package:gdp_playground/map_value_notifier.dart';
 import 'package:go_router/go_router.dart';
 import 'package:json_rpc_2/json_rpc_2.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,9 +14,10 @@ class Neuro extends InheritedWidget {
   final UnmodifiableMapView<String, Domain> domains;
   final Client Function() _clientResolve;
   final WebSocketChannel Function() _channelResolve;
+  final MapValueNotifier<String, String> listenedEvents;
   Client get client => _clientResolve();
   WebSocketChannel get channel => _channelResolve();
-  const Neuro({super.key, required super.child, required this.domains, required Client Function() client,  required WebSocketChannel Function() channel})
+  const Neuro({super.key, required super.child, required this.domains, required Client Function() client,  required WebSocketChannel Function() channel, required this.listenedEvents})
   : _clientResolve = client
   , _channelResolve = channel;
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,8 +7,6 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:gdp_playground/g.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:go_router/go_router.dart';
-
-Map<String, StreamSubscription<dynamic>> listenedEvents = {};
 
 class EventPage extends StatefulWidget {
   final Event info;
@@ -20,32 +19,27 @@ class EventPage extends StatefulWidget {
 
 class _EventPageState extends State<EventPage> {
   bool paramsPanelExpanded = !(Platform.isAndroid || Platform.isIOS);
-  StreamSubscription<dynamic>? sub;
+
+  bool listening = true;
 
   @override
   void initState() {
     super.initState();
+    var n = Neuro.nameOf(context);
+    var le = Neuro.of(context).listenedEvents;
+    listening = le.containsKey(n);
+    if (listening) response = le.listenTo(n)!;
   }
-
-  void onMessageReceived(msg) {}
 
   @override
   void dispose() {
-    sub?.cancel();
     super.dispose();
   }
 
-  ValueNotifier<String> response = ValueNotifier("Event metadata will be set here!");
+  ValueNotifier<String> response = ValueNotifier("{}");
 
   @override
   Widget build(BuildContext context) {
-    // pick up from where we left off
-    var e = listenedEvents[Neuro.nameOf(context)];
-    if (e!=null) {
-      sub = e;
-      // but remember to replace the function
-      e.onData(onMessageReceived);
-    }
     return Column(
       spacing: 4,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,19 +75,12 @@ class _EventPageState extends State<EventPage> {
             StatefulBuilder(
               builder: (context, ss) => FilledButton(
                 onPressed: ()=>ss((){
-                  if (sub!=null) {
-                    sub!.cancel();
-                    listenedEvents.remove(Neuro.nameOf(context));
-                  } else {
-                    // TODO: dont do it like this because it means we're jsonDecoding on every listeners for each event
-                    sub = Neuro.of(context).channel.stream.listen(onMessageReceived);
-                    listenedEvents[Neuro.nameOf(context)] = sub!;
-                  }
+                  
                 }),
-                style: (sub!=null) ? ButtonStyle(
+                style: /*(sub!=null) ? ButtonStyle(
                   backgroundColor: WidgetStatePropertyAll(Theme.of(context).colorScheme.tertiary)
-                ) : null,
-                child: Text(sub==null?"Listen":"Stop"),
+                ) : */null,
+                child: Text("Listen"),
               )
             )
           ],

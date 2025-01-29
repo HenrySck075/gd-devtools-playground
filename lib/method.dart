@@ -51,6 +51,8 @@ class _MethodPageState extends State<MethodPage> {
             content: Text("The method is documented but not implemented in the mod. Sorry!"),
           )
         );
+      } else {
+        response.value = "Error ${err.code}: ${err.message}";
       }
     });
   }
@@ -171,16 +173,16 @@ class _MethodPageState extends State<MethodPage> {
               )
             ),
           ),
-          Container(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            padding: EdgeInsets.all(16),
-            child: ValueListenableBuilder(
-              valueListenable: response, 
-              builder: (_,v,__) => SelectableText(
+          ValueListenableBuilder(
+            valueListenable: response, 
+            builder: (_,v,__) => Container(
+              color: v.startsWith("Error") ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).colorScheme.surfaceContainerLow,
+              padding: EdgeInsets.all(16),
+              child: SelectableText(
                 v,
                 style: TextStyle(fontFamily: "consola"),
               )
-            ),
+            )
           ),
         ],
       ),

@@ -8,6 +8,7 @@ import 'package:gdp_playground/domain.dart';
 import 'package:gdp_playground/events.dart';
 import 'package:gdp_playground/g.dart';
 import 'package:gdp_playground/home.dart';
+import 'package:gdp_playground/map_value_notifier.dart';
 import 'package:gdp_playground/method.dart';
 import 'package:json_rpc_2/json_rpc_2.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -128,11 +129,12 @@ class ShellPage extends StatefulWidget {
 }
 
 class _ShellPageState extends State<ShellPage> {
-  
   WebSocketChannel? socket;
   Client? client;
   // shell is the main owner of it
   Map<String, Domain> domains = {};
+  MapValueNotifier<String, String> listenedEvents = MapValueNotifier({});
+
   bool? disconnected = true;
 
   Client _clientResolve() {return client!;}
@@ -142,10 +144,18 @@ class _ShellPageState extends State<ShellPage> {
     if (disconnected == false) return;
     disconnected = null;
     socket = WebSocketChannel.connect(Uri.parse("ws://localhost:1412"));
-    client = Client(socket!.cast<String>());
+    var idk = socket!.cast<String>().changeStream((s)=>s.asBroadcastStream());
+    client = Client(idk);
     client!.listen().whenComplete((){
       disconnected = true;
       setState((){});
+    });
+    idk.stream.listen((e){
+      Map<String, dynamic> payload = jsonDecode(e);
+      if (payload.containsKey("id")) return;
+      if (listenedEvents.containsKey(payload["method"])) {
+        listenedEvents[payload["method"]] = payload["parameters"];
+      }
     });
     socket!.ready.then((e){
       disconnected = false;
@@ -263,6 +273,7 @@ class _ShellPageState extends State<ShellPage> {
         domains: UnmodifiableMapView(domains),
         client: _clientResolve,
         channel: _channelResolve,
+        listenedEvents: listenedEvents,
         child: AnimatedTheme(
           data: t,
           curve: Easing.emphasizedDecelerate,
