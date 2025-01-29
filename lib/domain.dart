@@ -1,8 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:gdp_playground/confe.dart';
 import 'package:gdp_playground/extensions.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:go_router/go_router.dart';
@@ -86,26 +84,17 @@ class DomainPage extends StatelessWidget {
           ),
         ),
         // its content (methods, events, types)
-        for (final panel in j)
-        Theme(
-          data: ThemeData(
-            colorScheme: panel.name == "methods" ? methodScheme : panel.name == "events" ? eventScheme : panel.name == "types" ? typeScheme : mainScheme
-          ),
-          child: StatefulBuilder(
-            builder: (context, setState) => ExpansionPanelList(
-              materialGapSize: 0,
-              children: [panel],
-              expansionCallback: (dex, opened) {
-                setState((){
-                  panel.isExpanded = opened;
-                });
-              },
-            )
-          ),
+        StatefulBuilder(
+          builder: (context, setState) => ExpansionPanelList(
+            materialGapSize: 0,
+            children: j,
+            expansionCallback: (dex, opened) {
+              setState((){
+                j[dex].isExpanded = opened;
+              });
+            },
+          )
         ),
-        SizedBox(
-          height: kDebugMode ? 77 : 16,
-        )
       ],
     );
   }

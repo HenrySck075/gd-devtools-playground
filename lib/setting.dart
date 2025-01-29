@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gdp_playground/extensions.dart';
 import 'package:gdp_playground/g.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:go_router/go_router.dart';
@@ -15,7 +14,7 @@ class SettingUpdated extends Notification {
 
 class SettingNode extends StatefulWidget {
   final Parameter parameter;
-  SettingNode(this.parameter, {super.key});
+  const SettingNode(this.parameter, {super.key});
 
   static SettingNode adaptive(BuildContext context, Parameter parameter) {
     String? type = parameter.primitive 
@@ -41,7 +40,7 @@ class _SettingNodeState<T extends SettingNode> extends State<T> {
   @override
   Widget build(BuildContext context) => ListTile(
     title: Text(widget.parameter.name),
-    subtitle: Text(widget.parameter.description.truncate(77).replaceAll("\n", " ")),
+    subtitle: Text(widget.parameter.description),
     trailing: buildTrailingNode(context),
     onTap: kDebugMode ? (){
       showDialog(

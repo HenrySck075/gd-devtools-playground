@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 class MapValueNotifier<K,V> extends ChangeNotifier implements Map<K,V> {
-  Map<K,ValueNotifier<V>> _value;
+  final Map<K,ValueNotifier<V>> _value;
   MapValueNotifier(Map<K,V> value):_value = value.map((k,v)=>MapEntry(k,ValueNotifier(v)));
   
   ValueNotifier<V>? listenTo(K key) => _value[key];
@@ -11,6 +11,7 @@ class MapValueNotifier<K,V> extends ChangeNotifier implements Map<K,V> {
   
   @override
   void operator []=(K key, V value) {
+    if (!containsKey(key)) _value[key] = ValueNotifier(value);
     _value[key]?.value = value;
   }
   
@@ -76,8 +77,10 @@ class MapValueNotifier<K,V> extends ChangeNotifier implements Map<K,V> {
   
   @override
   V putIfAbsent(K key, V Function() ifAbsent) {
-    // TODO: implement putIfAbsent
-    throw UnimplementedError();
+    if (!containsKey(key)) {
+      _value[key] = ValueNotifier(ifAbsent());
+    }
+    return this[key]!;
   }
   
   @override
@@ -91,7 +94,7 @@ class MapValueNotifier<K,V> extends ChangeNotifier implements Map<K,V> {
   @override
   V update(K key, V Function(V value) update, {V Function()? ifAbsent}) {
     if (containsKey(key)) {
-      _value[key]!.value = update(this[key]!);
+      _value[key]!.value = update(_value[key]!.value);
     } else {
       _value[key] = ValueNotifier(ifAbsent!());
     }

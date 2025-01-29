@@ -238,16 +238,16 @@ class _ShellPageState extends State<ShellPage> {
           )
           : domains.isEmpty || disconnected == null
             ? Center(child: CircularProgressIndicator(),) 
-            // intrinsics my ass
-            : CustomScrollView(
-              slivers: [
-                SliverFillRemaining(
-                  fillOverscroll: true,
-                  hasScrollBody: false,
-                  child: widget.child // kms
-                ),
-              ],
-            ),
+            // i mean you can say that "just use SliverFillRemaining" but it cuts off contents when i use it so no
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  debugPrint(constraints.maxHeight.toString());
+                  return ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight==double.infinity?constraints.minHeight:constraints.maxHeight),
+                    child: SingleChildScrollView(child: widget.child,)
+                  );
+                }
+              ),
         )
       )
     );
