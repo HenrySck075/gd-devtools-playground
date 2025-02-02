@@ -107,6 +107,8 @@ class _StringSettingNodeState extends _SettingNodeState<StringSettingNode> {
   Widget buildTrailingNode(BuildContext context) => SizedBox(
     width: 240,
     child: TextField(
+      keyboardType: TextInputType.multiline,
+      maxLines: null,
       controller: _controller,
     ),
   );

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:gdp_playground/g.dart';
+import 'package:gdp_playground/json_converter_2.dart';
 import 'package:gdp_playground/protocol_definition.dart';
 import 'package:gdp_playground/setting.dart';
 
@@ -39,7 +40,7 @@ class _MethodPageState extends State<MethodPage> {
 
     String method = "${routeState.pathParameters["domain"]}.${routeState.pathParameters["method"]}";
     client.sendRequest(method, requestJson).then((v){
-      response.value = jsonEncode(v);
+      response.value = jsonEncodeIndented(v);
     }).catchError((e){
       if (!context.mounted) return;
       var err = e as RpcException;
